@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>对方正在输入... - AI应用开发工程师</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        // Tailwind 自定义配置
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        dark: '#0F172A', // 主背景色
+                        light: '#1E293B', // 次要背景色
+                        text: '#F8FAFC',  // 主要文字色
+                        textSecondary: '#94A3B8' // 次要文字色
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .text-shadow {
+                text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            }
+            .card-hover {
+                transition: all 0.3s ease;
+            }
+            .card-hover:hover {
+                transform: translateY(-5px);
+                box-shadow: 0 10px 25px -5px rgba(22, 93, 255, 0.2);
+            }
+            .avatar-scale {
+                transition: all 0.3s ease;
+            }
+        }
+    </style>
+</head>
+<body class="bg-dark text-text antialiased min-h-screen" id="app">
+    <!-- 导航栏 -->
+    <nav id="mainNav" class="fixed w-full bg-dark/95 backdrop-blur-sm shadow-sm z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- 左侧logo -->
+                <div class="flex items-center shrink-0">
+                    <span class="text-primary font-bold text-xl">DEV.AI</span>
+                </div>
+
+                <!-- 中间：滚动时显示的头像（移除联系我按钮） -->
+                <div id="scrollHeader" class="hidden lg:flex items-center gap-4 shrink-0">
+                    <!-- 迷你头像 -->
+                    <div class="w-10 h-10 rounded-full overflow-hidden border-2 border-primary/30 avatar-scale">
+                        <img src="/myWeb/头像.jpg" alt="对方正在输入...的头像" class="w-full h-full object-cover">
+                    </div>
+                </div>
+
+                <!-- 右侧：桌面端导航菜单 + 简历按钮 + 语言切换按钮 -->
+                <div class="hidden md:flex items-center space-x-6 ml-auto">
+                    <a href="#about" class="text-textSecondary hover:text-primary transition-colors" data-lang="about">关于我</a>
+                    <a href="#skills" class="text-textSecondary hover:text-primary transition-colors" data-lang="skills">技能</a>
+                    <a href="#projects" class="text-textSecondary hover:text-primary transition-colors" data-lang="projects">项目</a>
+                    <a href="#experience" class="text-textSecondary hover:text-primary transition-colors" data-lang="experience">经历</a>
+                    <a href="#contact" class="text-textSecondary hover:text-primary transition-colors" data-lang="contact">联系我</a>
+                    <!-- 简历下载按钮（导航栏最右侧） -->
+                    <a href="/myWeb/简历.docx" download class="px-4 py-2 bg-primary/10 text-primary border border-primary/20 rounded-lg hover:bg-primary/20 transition-colors whitespace-nowrap" data-lang="resume">
+                        简历 <i class="fa fa-download ml-1"></i>
+                    </a>
+                    <!-- 语言切换按钮 -->
+                    <button id="langToggle" class="px-4 py-2 bg-light/50 text-text border border-light/20 rounded-lg hover:bg-light/70 transition-colors whitespace-nowrap">
+                        简中/Eng
+                    </button>
+                </div>
+
+                <!-- 移动端菜单按钮 -->
+                <div class="md:hidden flex items-center ml-auto gap-2">
+                    <!-- 移动端简历按钮 -->
+                    <a href="/myWeb/简历.docx" download class="px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-lg text-sm" data-lang="resume">
+                        <i class="fa fa-download mr-1"></i> 简历
+                    </a>
+                    <!-- 移动端语言切换按钮 -->
+                    <button id="mobileLangToggle" class="px-3 py-1 bg-light/50 text-text border border-light/20 rounded-lg text-sm">
+                        简中/Eng
+                    </button>
+                    <!-- 移动端菜单按钮 -->
+                    <button id="menuBtn" class="text-textSecondary hover:text-primary p-2">
+                        <i class="fa fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 移动端菜单 -->
+        <div id="mobileMenu" class="hidden md:hidden bg-light shadow-lg absolute w-full z-60 border-t border-primary/20">
+            <div class="container mx-auto px-4 py-3 space-y-3">
+                <a href="#about" class="block text-text hover:text-primary py-2" data-lang="about">关于我</a>
+                <a href="#skills" class="block text-text hover:text-primary py-2" data-lang="skills">技能</a>
+                <a href="#projects" class="block text-text hover:text-primary py-2" data-lang="projects">项目</a>
+                <a href="#experience" class="block text-text hover:text-primary py-2" data-lang="experience">经历</a>
+                <a href="#contact" class="block text-text hover:text-primary py-2" data-lang="contact">联系我</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区：头像和文字左右调换 -->
+    <header class="pt-32 pb-20 bg-gradient-to-br from-primary/10 to-secondary/10">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row items-center gap-10">
+                <!-- 头像移到左侧 -->
+                <div class="md:w-1/2 flex justify-center order-1 md:order-1">
+                    <div class="relative">
+                        <div class="w-64 h-64 sm:w-80 sm:h-80 rounded-full overflow-hidden border-4 border-primary/20 shadow-lg">
+                            <img src="/myWeb/头像.jpg" alt="对方正在输入...的头像" class="w-full h-full object-cover">
+                        </div>
+                        <div class="absolute -bottom-4 -right-4 bg-secondary text-dark rounded-lg px-4 py-2 shadow-md font-medium">
+                            <i class="fa fa-code mr-2"></i>
+                            <span data-lang="ai-dev">AI开发实战</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 文字移到右侧 -->
+                <div class="md:w-1/2 order-2 md:order-2">
+                    <h1 class="text-[clamp(2rem,5vw,3.5rem)] font-bold leading-tight text-shadow">
+                        <span data-lang="hi">嗨，我是</span> <span class="text-primary">对方正在输入...</span><br>
+                        <span data-lang="title">AI应用开发工程师</span>
+                    </h1>
+                    <p class="mt-4 text-lg text-textSecondary max-w-xl" data-lang="intro">
+                        专注于大模型应用落地开发，精通Prompt工程、RAG搭建、模型API对接，具备AI应用全流程开发与轻量化部署实战经验，可快速上手LLM相关功能开发与调试，随时到岗。
+                    </p>
+                    <div class="mt-8 flex flex-wrap gap-4">
+                        <a href="#contact" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors" data-lang="contact-me">
+                            联系我 <i class="fa fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- 关于我 -->
+        <section id="about" class="py-20 bg-light/30">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold" data-lang="about-me">关于我</h2>
+                    <div class="w-20 h-1 bg-primary mx-auto mt-4 rounded-full"></div>
+                </div>
+                <div class="max-w-3xl mx-auto">
+                    <p class="text-lg text-textSecondary leading-relaxed mb-6" data-lang="about-1">
+                        河南大学软件工程本科毕业生，GPA3.6/4.0，专业排名前15%，荣获校级二等奖学金、优秀毕业生称号。深耕AI应用开发领域，具备扎实的软件工程与AI理论基础，熟悉大模型基础原理与落地流程。
+                    </p>
+                    <p class="text-lg text-textSecondary leading-relaxed mb-6" data-lang="about-2">
+                        拥有多款垂直AI应用开发实战经验，覆盖智能问答、文档处理、内容生成、多模态图文生成等场景，精通Prompt工程、RAG检索增强生成、商用/开源大模型API对接，可独立完成基础AI功能开发、调试与轻量化部署，注重代码规范与应用稳定性，求职状态为随时到岗。
+                    </p>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 mt-10">
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-primary">3+</div>
+                            <div class="text-textSecondary mt-2" data-lang="projects-count">实战项目</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-primary">10+</div>
+                            <div class="text-textSecondary mt-2" data-lang="skills-count">核心技能</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-primary">3</div>
+                            <div class="text-textSecondary mt-2" data-lang="directions-count">技术方向</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-primary">2+</div>
+                            <div class="text-textSecondary mt-2" data-lang="awards-count">荣誉奖项</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 技能展示 -->
+        <section id="skills" class="py-20 bg-dark">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold" data-lang="my-skills">我的技能</h2>
+                    <div class="w-20 h-1 bg-primary mx-auto mt-4 rounded-full"></div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <!-- 大模型核心技能 -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-6 flex items-center text-text" data-lang="llm-skills">
+                            <i class="fa fa-brain text-primary mr-3"></i> 大模型核心技能
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium text-text" data-lang="prompt">Prompt工程/LLM开发</span>
+                                    <span class="text-textSecondary">90%</span>
+                                </div>
+                                <div class="w-full bg-light/50 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 90%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium text-text" data-lang="rag">RAG检索增强生成</span>
+                                    <span class="text-textSecondary">85%</span>
+                                </div>
+                                <div class="w-full bg-light/50 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 85%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium text-text" data-lang="vector-db">向量数据库(Chroma/FAISS)</span>
+                                    <span class="text-textSecondary">80%</span>
+                                </div>
+                                <div class="w-full bg-light/50 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 80%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium text-text" data-lang="nlp">NLP文本处理</span>
+                                    <span class="text-textSecondary">75%</span>
+                                </div>
+                                <div class="w-full bg-light/50 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 75%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 开发与工程化技能 -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-6 flex items-center text-text" data-lang="dev-skills">
+                            <i class="fa fa-code text-primary mr-3"></i> 开发与工程化
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium text-text" data-lang="python">Python开发</span>
+                                    <span class="text-textSecondary">95%</span>
+                                </div>
+                                <div class="w-full bg-light/50 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 95%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium text-text" data-lang="framework">FastAPI/Flask</span>
+                                    <span class="text-textSecondary">85%</span>
+                                </div>
+                                <div class="w-full bg-light/50 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 85%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium text-text" data-lang="deploy">Docker/Linux部署</span>
+                                    <span class="text-textSecondary">75%</span>
+                                </div>
+                                <div class="w-full bg-light/50 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 75%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-1">
+                                    <span class="font-medium text-text" data-lang="db">MySQL/Redis</span>
+                                    <span class="text-textSecondary">80%</span>
+                                </div>
+                                <div class="w-full bg-light/50 rounded-full h-2">
+                                    <div class="bg-primary h-2 rounded-full" style="width: 80%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 其他技能 & AI工具 -->
+                <div class="mt-12">
+                    <h3 class="text-xl font-semibold mb-6 flex items-center text-text" data-lang="other-skills">
+                        <i class="fa fa-cogs text-primary mr-3"></i> AI工具 & 辅助技能
+                    </h3>
+                    <div class="flex flex-wrap gap-3">
+                        <span class="px-4 py-2 bg-light/50 border border-dark/50 rounded-full shadow-sm text-textSecondary">LangChain</span>
+                        <span class="px-4 py-2 bg-light/50 border border-dark/50 rounded-full shadow-sm text-textSecondary">Hugging Face</span>
+                        <span class="px-4 py-2 bg-light/50 border border-dark/50 rounded-full shadow-sm text-textSecondary">LlamaIndex</span>
+                        <span class="px-4 py-2 bg-light/50 border border-dark/50 rounded-full shadow-sm text-textSecondary">PyTorch</span>
+                        <span class="px-4 py-2 bg-light/50 border border-dark/50 rounded-full shadow-sm text-textSecondary">Git版本控制</span>
+                        <span class="px-4 py-2 bg-light/50 border border-dark/50 rounded-full shadow-sm text-textSecondary">Postman</span>
+                        <span class="px-4 py-2 bg-light/50 border border-dark/50 rounded-full shadow-sm text-textSecondary">技术文档撰写</span>
+                        <span class="px-4 py-2 bg-light/50 border border-dark/50 rounded-full shadow-sm text-textSecondary">跨团队协同</span>
+                        <span class="px-4 py-2 bg-light/50 border border-dark/50 rounded-full shadow-sm text-textSecondary">需求拆解</span>
+                        <span class="px-4 py-2 bg-light/50 border border-dark/50 rounded-full shadow-sm text-textSecondary">问题排查</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 项目展示 -->
+        <section id="projects" class="py-20 bg-light/30">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold" data-lang="my-projects">我的项目</h2>
+                    <div class="w-20 h-1 bg-primary mx-auto mt-4 rounded-full"></div>
+                    <p class="mt-4 text-textSecondary max-w-2xl mx-auto" data-lang="projects-desc">
+                        以下是我主导/参与的AI应用开发实战项目，覆盖大模型落地核心场景
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <!-- 项目1：企业轻量化知识库问答工具 -->
+                    <div class="bg-dark rounded-xl shadow-md overflow-hidden card-hover border border-light/20">
+                        <img src="https://picsum.photos/600/400?random=2" alt="企业轻量化知识库问答工具" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2 text-text" data-lang="project-1">企业轻量化知识库问答工具</h3>
+                            <p class="text-textSecondary mb-4" data-lang="project-1-desc">
+                                核心开发，针对中小企业文档零散痛点搭建AI问答工具，实现规章制度、产品资料一键问答，提升内部信息检索效率。
+                            </p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Python</span>
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">LangChain</span>
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Chroma</span>
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">FastAPI</span>
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Docker</span>
+                            </div>
+                            <div class="flex gap-3">
+                                <a href="#contact" class="text-primary hover:text-primary/80" data-lang="source-code">
+                                    <i class="fa fa-github mr-1"></i> 源码
+                                </a>
+                                <a href="#contact" class="text-primary hover:text-primary/80" data-lang="demo">
+                                    <i class="fa fa-external-link mr-1"></i> 演示
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 项目2：AI智能文案生成小工具 -->
+                    <div class="bg-dark rounded-xl shadow-md overflow-hidden card-hover border border-light/20">
+                        <img src="https://picsum.photos/600/400?random=3" alt="AI智能文案生成小工具" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2 text-text" data-lang="project-2">AI智能文案生成小工具</h3>
+                            <p class="text-textSecondary mb-4" data-lang="project-2-desc">
+                                独立开发，针对办公文案撰写痛点开发轻量化生成工具，适配多场景文案需求，降低人工编写成本，提升办公效率。
+                            </p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Python</span>
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Flask</span>
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">大模型API</span>
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Redis</span>
+                            </div>
+                            <div class="flex gap-3">
+                                <a href="#contact" class="text-primary hover:text-primary/80" data-lang="source-code">
+                                    <i class="fa fa-github mr-1"></i> 源码
+                                </a>
+                                <a href="#contact" class="text-primary hover:text-primary/80" data-lang="demo">
+                                    <i class="fa fa-external-link mr-1"></i> 演示
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 项目3：多模态图文辅助生成工具 -->
+                    <div class="bg-dark rounded-xl shadow-md overflow-hidden card-hover border border-light/20">
+                        <img src="https://picsum.photos/600/400?random=4" alt="多模态图文辅助生成工具" class="w-full h-48 object-cover">
+                        <div class="p-6">
+                            <h3 class="text-xl font-semibold mb-2 text-text" data-lang="project-3">多模态图文辅助生成工具</h3>
+                            <p class="text-textSecondary mb-4" data-lang="project-3-desc">
+                                参与开发，实现文案生成+配图推荐联动功能，适配小型营销场景轻量化使用需求，保障功能快速落地。
+                            </p>
+                            <div class="flex flex-wrap gap-2 mb-4">
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Python</span>
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">FastAPI</span>
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">大模型API</span>
+                                <span class="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">Stable Diffusion</span>
+                            </div>
+                            <div class="flex gap-3">
+                                <a href="#contact" class="text-primary hover:text-primary/80" data-lang="source-code">
+                                    <i class="fa fa-github mr-1"></i> 源码
+                                </a>
+                                <a href="#contact" class="text-primary hover:text-primary/80" data-lang="demo">
+                                    <i class="fa fa-external-link mr-1"></i> 演示
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 教育/项目经历 -->
+        <section id="experience" class="py-20 bg-dark">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold" data-lang="education-experience">教育与项目经历</h2>
+                    <div class="w-20 h-1 bg-primary mx-auto mt-4 rounded-full"></div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <!-- 教育经历 -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-6 flex items-center text-text" data-lang="education">
+                            <i class="fa fa-graduation-cap text-primary mr-3"></i> 教育经历
+                        </h3>
+                        <div class="space-y-8">
+                            <div class="bg-light/30 p-6 rounded-xl shadow-sm border border-light/20">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-text" data-lang="major">软件工程专业 | 本科</h4>
+                                        <p class="text-primary font-medium" data-lang="school">河南大学</p>
+                                    </div>
+                                    <span class="text-textSecondary">2021.09 - 2025.06</span>
+                                </div>
+                                <p class="mt-3 text-textSecondary" data-lang="education-desc">
+                                    GPA：3.6/4.0，专业排名前15%，荣获校级二等奖学金、优秀毕业生称号；主修Python开发、人工智能基础、自然语言处理、数据库原理等，筑牢AI开发与软件工程理论根基。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 项目经历 -->
+                    <div>
+                        <h3 class="text-xl font-semibold mb-6 flex items-center text-text" data-lang="project-experience">
+                            <i class="fa fa-folder-open text-primary mr-3"></i> 项目经历
+                        </h3>
+                        <div class="space-y-8">
+                            <div class="bg-light/30 p-6 rounded-xl shadow-sm border border-light/20">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-text" data-lang="project-1">企业轻量化知识库问答工具</h4>
+                                        <p class="text-primary font-medium" data-lang="core-dev">核心开发</p>
+                                    </div>
+                                    <span class="text-textSecondary">2025.07 - 2025.09</span>
+                                </div>
+                                <p class="mt-3 text-textSecondary" data-lang="project-1-exp">
+                                    基于LangChain+Chroma+Qwen搭建RAG流程，完成文档清洗/向量化；优化Prompt缓解模型幻觉；FastAPI开发接口，Docker容器化部署并负责日常迭代。
+                                </p>
+                            </div>
+                            <div class="bg-light/30 p-6 rounded-xl shadow-sm border border-light/20">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="text-lg font-semibold text-text" data-lang="project-2">AI智能文案生成小工具</h4>
+                                        <p class="text-primary font-medium" data-lang="independent-dev">独立开发</p>
+                                    </div>
+                                    <span class="text-textSecondary">2025.09 - 2025.10</span>
+                                </div>
+                                <p class="mt-3 text-textSecondary" data-lang="project-2-exp">
+                                    对接商用大模型API并封装调试；编写文本预处理脚本优化输入；基于Flask搭建交互界面，实现文案生成/导出，完成本地部署与自测。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 联系方式 -->
+        <section id="contact" class="py-20 bg-light/30">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold" data-lang="contact-me-title">联系我</h2>
+                    <div class="w-20 h-1 bg-primary mx-auto mt-4 rounded-full"></div>
+                    <p class="mt-4 text-textSecondary max-w-2xl mx-auto" data-lang="contact-desc">
+                        如果你有AI项目合作、工作机会或技术交流的意向，欢迎随时联系我，本人可随时到岗
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <!-- 联系信息 -->
+                    <div>
+                        <div class="bg-dark p-8 rounded-xl shadow-md h-full border border-light/20">
+                            <h3 class="text-xl font-semibold mb-6 text-text" data-lang="contact-info">联系方式</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-start">
+                                    <div class="bg-primary/10 rounded-full p-3 mr-4">
+                                        <i class="fa fa-envelope text-primary text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-text" data-lang="email">邮箱</h4>
+                                        <p class="text-textSecondary mt-1">j170215@126.com</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start">
+                                    <div class="bg-primary/10 rounded-full p-3 mr-4">
+                                        <i class="fa fa-map-marker text-primary text-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-text" data-lang="city">现居城市</h4>
+                                        <p class="text-textSecondary mt-1" data-lang="city-desc">杭州市 | 可随时到岗</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-8">
+                                <h4 class="font-medium text-text mb-4" data-lang="job-intention">求职意向</h4>
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="px-3 py-1 bg-primary/10 text-primary rounded-full" data-lang="job-1">AI应用开发工程师</span>
+                                    <span class="px-3 py-1 bg-primary/10 text-primary rounded-full" data-lang="job-2">大模型应用开发工程师</span>
+                                    <span class="px-3 py-1 bg-primary/10 text-primary rounded-full" data-lang="job-3">LLM应用开发工程师</span>
+                                    <span class="px-3 py-1 bg-primary/10 text-primary rounded-full" data-lang="job-type">全职</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 联系表单 -->
+                    <div>
+                        <div class="bg-dark p-8 rounded-xl shadow-md h-full border border-light/20">
+                            <h3 class="text-xl font-semibold mb-6 text-text" data-lang="send-message">发送消息</h3>
+                            <form>
+                                <div class="mb-4">
+                                    <label for="name" class="block text-textSecondary mb-2" data-lang="your-name">姓名</label>
+                                    <input type="text" id="name" class="w-full px-4 py-2 bg-light/50 border border-light/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text" placeholder="请输入您的姓名" data-placeholder="your-name-placeholder">
+                                </div>
+                                <div class="mb-4">
+                                    <label for="email" class="block text-textSecondary mb-2" data-lang="your-email">邮箱</label>
+                                    <input type="email" id="email" class="w-full px-4 py-2 bg-light/50 border border-light/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text" placeholder="请输入您的邮箱" data-placeholder="your-email-placeholder">
+                                </div>
+                                <div class="mb-4">
+                                    <label for="subject" class="block text-textSecondary mb-2" data-lang="subject">主题</label>
+                                    <input type="text" id="subject" class="w-full px-4 py-2 bg-light/50 border border-light/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text" placeholder="请输入消息主题" data-placeholder="subject-placeholder">
+                                </div>
+                                <div class="mb-6">
+                                    <label for="message" class="block text-textSecondary mb-2" data-lang="message">消息内容</label>
+                                    <textarea id="message" rows="4" class="w-full px-4 py-2 bg-light/50 border border-light/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-text" placeholder="请输入您想对我说的话" data-placeholder="message-placeholder"></textarea>
+                                </div>
+                                <button type="submit" class="w-full bg-primary text-white py-3 rounded-lg hover:bg-primary/90 transition-colors" data-lang="send-btn">
+                                    发送消息 <i class="fa fa-paper-plane ml-2"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark py-10 border-t border-light/20">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-6 md:mb-0">
+                    <span class="text-xl font-bold text-text">DEV.AI</span>
+                    <p class="mt-2 text-textSecondary" data-lang="footer-desc">AI应用开发工程师 | 大模型落地实战</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#about" class="text-textSecondary hover:text-white transition-colors" data-lang="about">关于我</a>
+                    <a href="#skills" class="text-textSecondary hover:text-white transition-colors" data-lang="skills">技能</a>
+                    <a href="#projects" class="text-textSecondary hover:text-white transition-colors" data-lang="projects">项目</a>
+                    <a href="#contact" class="text-textSecondary hover:text-white transition-colors" data-lang="contact">联系我</a>
+                </div>
+            </div>
+            <div class="border-t border-light/10 mt-8 pt-8 text-center text-textSecondary">
+                <p data-lang="copyright">&copy; 2025 对方正在输入.... 保留所有权利.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript：核心功能 + 翻译功能 -->
+    <script>
+        // 翻译字典
+        const translations = {
+            // 中文
+            'zh': {
+                'about': '关于我',
+                'skills': '技能',
+                'projects': '项目',
+                'experience': '经历',
+                'contact': '联系我',
+                'resume': '简历',
+                'ai-dev': 'AI开发实战',
+                'hi': '嗨，我是',
+                'title': 'AI应用开发工程师',
+                'intro': '专注于大模型应用落地开发，精通Prompt工程、RAG搭建、模型API对接，具备AI应用全流程开发与轻量化部署实战经验，可快速上手LLM相关功能开发与调试，随时到岗。',
+                'contact-me': '联系我',
+                'about-me': '关于我',
+                'about-1': '河南大学软件工程本科毕业生，GPA3.6/4.0，专业排名前15%，荣获校级二等奖学金、优秀毕业生称号。深耕AI应用开发领域，具备扎实的软件工程与AI理论基础，熟悉大模型基础原理与落地流程。',
+                'about-2': '拥有多款垂直AI应用开发实战经验，覆盖智能问答、文档处理、内容生成、多模态图文生成等场景，精通Prompt工程、RAG检索增强生成、商用/开源大模型API对接，可独立完成基础AI功能开发、调试与轻量化部署，注重代码规范与应用稳定性，求职状态为随时到岗。',
+                'projects-count': '实战项目',
+                'skills-count': '核心技能',
+                'directions-count': '技术方向',
+                'awards-count': '荣誉奖项',
+                'my-skills': '我的技能',
+                'llm-skills': '大模型核心技能',
+                'prompt': 'Prompt工程/LLM开发',
+                'rag': 'RAG检索增强生成',
+                'vector-db': '向量数据库(Chroma/FAISS)',
+                'nlp': 'NLP文本处理',
+                'dev-skills': '开发与工程化',
+                'python': 'Python开发',
+                'framework': 'FastAPI/Flask',
+                'deploy': 'Docker/Linux部署',
+                'db': 'MySQL/Redis',
+                'other-skills': 'AI工具 & 辅助技能',
+                'my-projects': '我的项目',
+                'projects-desc': '以下是我主导/参与的AI应用开发实战项目，覆盖大模型落地核心场景',
+                'project-1': '企业轻量化知识库问答工具',
+                'project-1-desc': '核心开发，针对中小企业文档零散痛点搭建AI问答工具，实现规章制度、产品资料一键问答，提升内部信息检索效率。',
+                'project-2': 'AI智能文案生成小工具',
+                'project-2-desc': '独立开发，针对办公文案撰写痛点开发轻量化生成工具，适配多场景文案需求，降低人工编写成本，提升办公效率。',
+                'project-3': '多模态图文辅助生成工具',
+                'project-3-desc': '参与开发，实现文案生成+配图推荐联动功能，适配小型营销场景轻量化使用需求，保障功能快速落地。',
+                'source-code': '源码',
+                'demo': '演示',
+                'education-experience': '教育与项目经历',
+                'education': '教育经历',
+                'major': '软件工程专业 | 本科',
+                'school': '河南大学',
+                'education-desc': 'GPA：3.6/4.0，专业排名前15%，荣获校级二等奖学金、优秀毕业生称号；主修Python开发、人工智能基础、自然语言处理、数据库原理等，筑牢AI开发与软件工程理论根基。',
+                'project-experience': '项目经历',
+                'core-dev': '核心开发',
+                'project-1-exp': '基于LangChain+Chroma+Qwen搭建RAG流程，完成文档清洗/向量化；优化Prompt缓解模型幻觉；FastAPI开发接口，Docker容器化部署并负责日常迭代。',
+                'independent-dev': '独立开发',
+                'project-2-exp': '对接商用大模型API并封装调试；编写文本预处理脚本优化输入；基于Flask搭建交互界面，实现文案生成/导出，完成本地部署与自测。',
+                'contact-me-title': '联系我',
+                'contact-desc': '如果你有AI项目合作、工作机会或技术交流的意向，欢迎随时联系我，本人可随时到岗',
+                'contact-info': '联系方式',
+                'email': '邮箱',
+                'city': '现居城市',
+                'city-desc': '杭州市 | 可随时到岗',
+                'job-intention': '求职意向',
+                'job-1': 'AI应用开发工程师',
+                'job-2': '大模型应用开发工程师',
+                'job-3': 'LLM应用开发工程师',
+                'job-type': '全职',
+                'send-message': '发送消息',
+                'your-name': '姓名',
+                'your-name-placeholder': '请输入您的姓名',
+                'your-email': '邮箱',
+                'your-email-placeholder': '请输入您的邮箱',
+                'subject': '主题',
+                'subject-placeholder': '请输入消息主题',
+                'message': '消息内容',
+                'message-placeholder': '请输入您想对我说的话',
+                'send-btn': '发送消息',
+                'footer-desc': 'AI应用开发工程师 | 大模型落地实战',
+                'copyright': '&copy; 2025 对方正在输入.... 保留所有权利.'
+            },
+            // 英文
+            'en': {
+                'about': 'About Me',
+                'skills': 'Skills',
+                'projects': 'Projects',
+                'experience': 'Experience',
+                'contact': 'Contact',
+                'resume': 'Resume',
+                'ai-dev': 'AI Development Practice',
+                'hi': 'Hi, I am',
+                'title': 'AI Application Developer',
+                'intro': 'Focused on LLM application development and deployment, proficient in Prompt Engineering, RAG construction, and model API integration. With full-process AI application development and lightweight deployment experience, ready to start work immediately.',
+                'contact-me': 'Contact Me',
+                'about-me': 'About Me',
+                'about-1': 'Bachelor of Software Engineering, Henan University, GPA 3.6/4.0, top 15% in major, awarded Second-Class Scholarship and Outstanding Graduate. Specialized in AI application development with solid software engineering and AI theoretical foundation, familiar with LLM fundamentals and deployment processes.',
+                'about-2': 'With practical experience in developing multiple vertical AI applications covering intelligent Q&A, document processing, content generation, and multimodal text-image generation. Proficient in Prompt Engineering, RAG, commercial/open-source LLM API integration, capable of independently developing, debugging, and lightweight deploying basic AI functions with a focus on code standards and application stability, available for immediate employment.',
+                'projects-count': 'Practical Projects',
+                'skills-count': 'Core Skills',
+                'directions-count': 'Tech Directions',
+                'awards-count': 'Awards',
+                'my-skills': 'My Skills',
+                'llm-skills': 'LLM Core Skills',
+                'prompt': 'Prompt Engineering/LLM Development',
+                'rag': 'RAG (Retrieval-Augmented Generation)',
+                'vector-db': 'Vector Database (Chroma/FAISS)',
+                'nlp': 'NLP Text Processing',
+                'dev-skills': 'Development & Engineering',
+                'python': 'Python Development',
+                'framework': 'FastAPI/Flask',
+                'deploy': 'Docker/Linux Deployment',
+                'db': 'MySQL/Redis',
+                'other-skills': 'AI Tools & Auxiliary Skills',
+                'my-projects': 'My Projects',
+                'projects-desc': 'Below are the practical AI application development projects I led/participated in, covering core LLM deployment scenarios',
+                'project-1': 'Enterprise Lightweight Knowledge Base Q&A Tool',
+                'project-1-desc': 'Core Developer: Built an AI Q&A tool for SMEs to solve scattered document pain points, enabling one-click Q&A for regulations and product materials, improving internal information retrieval efficiency.',
+                'project-2': 'AI Intelligent Copywriting Generation Tool',
+                'project-2-desc': 'Independent Developer: Developed a lightweight generation tool for office copywriting, adapting to multi-scenario copy needs, reducing manual writing costs and improving office efficiency.',
+                'project-3': 'Multimodal Text-Image Auxiliary Generation Tool',
+                'project-3-desc': 'Participant: Implemented copy generation + image recommendation linkage function, adapting to lightweight use needs in small marketing scenarios to ensure rapid function deployment.',
+                'source-code': 'Source Code',
+                'demo': 'Demo',
+                'education-experience': 'Education & Project Experience',
+                'education': 'Education Experience',
+                'major': 'Software Engineering | Bachelor',
+                'school': 'Henan University',
+                'education-desc': 'GPA: 3.6/4.0, top 15% in major, awarded Second-Class Scholarship and Outstanding Graduate. Majored in Python Development, AI Fundamentals, NLP, Database Principles, laying a solid foundation for AI development and software engineering.',
+                'project-experience': 'Project Experience',
+                'core-dev': 'Core Developer',
+                'project-1-exp': 'Built RAG process based on LangChain+Chroma+Qwen, completed document cleaning/vectorization; optimized Prompt to alleviate model hallucinations; developed APIs with FastAPI, deployed with Docker and responsible for daily iteration.',
+                'independent-dev': 'Independent Developer',
+                'project-2-exp': 'Integrated and debugged commercial LLM APIs; wrote text preprocessing scripts to optimize input; built interactive interface with Flask to realize copy generation/export, completed local deployment and self-testing.',
+                'contact-me-title': 'Contact Me',
+                'contact-desc': 'If you have AI project cooperation, job opportunities or technical exchange intentions, please feel free to contact me. I am available for immediate employment.',
+                'contact-info': 'Contact Information',
+                'email': 'Email',
+                'city': 'Current City',
+                'city-desc': 'Hangzhou | Available for immediate employment',
+                'job-intention': 'Job Intention',
+                'job-1': 'AI Application Developer',
+                'job-2': 'LLM Application Developer',
+                'job-3': 'LLM Application Engineer',
+                'job-type': 'Full-time',
+                'send-message': 'Send Message',
+                'your-name': 'Name',
+                'your-name-placeholder': 'Please enter your name',
+                'your-email': 'Email',
+                'your-email-placeholder': 'Please enter your email',
+                'subject': 'Subject',
+                'subject-placeholder': 'Please enter message subject',
+                'message': 'Message Content',
+                'message-placeholder': 'Please enter what you want to say to me',
+                'send-btn': 'Send Message',
+                'footer-desc': 'AI Application Developer | LLM Deployment Practice',
+                'copyright': '&copy; 2025 Typing.... All Rights Reserved.'
+            }
+        };
+
+        // 全局变量：当前语言
+        let currentLang = 'zh';
+
+        // 切换语言函数
+        function switchLanguage() {
+            // 切换语言
+            currentLang = currentLang === 'zh' ? 'en' : 'zh';
+            
+            // 更新所有带data-lang属性的元素
+            document.querySelectorAll('[data-lang]').forEach(el => {
+                const key = el.getAttribute('data-lang');
+                if (translations[currentLang][key]) {
+                    el.textContent = translations[currentLang][key];
+                }
+            });
+
+            // 更新占位符
+            document.querySelectorAll('[data-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-placeholder');
+                if (translations[currentLang][key]) {
+                    el.placeholder = translations[currentLang][key];
+                }
+            });
+
+            // 更新语言按钮文字
+            const langText = currentLang === 'zh' ? '简中/Eng' : 'Eng/简中';
+            document.getElementById('langToggle').textContent = langText;
+            document.getElementById('mobileLangToggle').textContent = langText;
+
+            // 更新HTML lang属性
+            document.documentElement.lang = currentLang;
+        }
+
+        // 核心元素获取
+        const menuBtn = document.getElementById('menuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const scrollHeader = document.getElementById('scrollHeader');
+        const mainNav = document.getElementById('mainNav');
+        const allLinks = document.querySelectorAll('a[href^="#"]');
+        const langToggle = document.getElementById('langToggle');
+        const mobileLangToggle = document.getElementById('mobileLangToggle');
+        
+        // 移动端菜单切换
+        menuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        // 绑定语言切换事件
+        langToggle.addEventListener('click', switchLanguage);
+        mobileLangToggle.addEventListener('click', switchLanguage);
+
+        // 平滑滚动
+        allLinks.forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    const navHeight = mainNav.offsetHeight;
+                    window.scrollTo({
+                        top: targetElement.offsetTop - navHeight,
+                        behavior: 'smooth'
+                    });
+                    if (!mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.add('hidden');
+                    }
+                }
+            });
+        });
+
+        // 导航栏滚动效果
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 200) {
+                scrollHeader.classList.remove('hidden');
+                scrollHeader.classList.add('flex');
+                mainNav.classList.add('shadow-md', 'bg-dark/98');
+                mainNav.classList.remove('shadow-sm');
+            } else {
+                scrollHeader.classList.add('hidden');
+                scrollHeader.classList.remove('flex');
+                mainNav.classList.remove('shadow-md', 'bg-dark/98');
+                mainNav.classList.add('shadow-sm');
+            }
+        });
+
+        // 表单提交处理
+        document.querySelector('form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const alertText = currentLang === 'zh' ? '消息发送成功！我会尽快回复您。' : 'Message sent successfully! I will reply to you as soon as possible.';
+            alert(alertText);
+            e.target.reset();
+        });
+
+        // 初始化
+        window.addEventListener('load', () => {
+            if (window.scrollY > 200) {
+                scrollHeader.classList.remove('hidden');
+                scrollHeader.classList.add('flex');
+                mainNav.classList.add('shadow-md', 'bg-dark/98');
+            }
+        });
+    </script>
+</body>
+</html>
